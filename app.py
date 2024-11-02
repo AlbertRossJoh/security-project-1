@@ -100,7 +100,7 @@ def notes():
     c = db.cursor()
     c.execute("SELECT * FROM notes WHERE assocUser = ?;", (session['userid'],))
     notes = c.fetchall()
-    print(notes)
+    #print(notes)
     
     return render_template('notes.html',notes=notes,importerror=importerror)
 
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         init_db()
     runport = 5000
     if(len(sys.argv)==2):
-        runport = sys.argv[1]
+        runport = int(sys.argv[1])  #Here the port is casted as an int, to make sure it is nothing else.
     try:
         app.run(host='0.0.0.0', port=runport) # runs on machine ip address to make it visible on netowrk
     except:
