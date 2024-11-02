@@ -140,6 +140,11 @@ def register():
         db = connect_db()
         c = db.cursor()
 
+        #Check if the length of the password and username is at least one.
+        if(len(username) <= 0 or len(password) <= 0):
+            errored = True
+            usererror = "Username and Password must have a length of at least 1!"
+
         #Check if username already exists.
         c.execute("SELECT * FROM users WHERE username = ?;", (username,))
         if(len(c.fetchall())>0):
