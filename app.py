@@ -1,4 +1,4 @@
-import json, sqlite3, functools, os, hashlib,time, random, sys, hmac
+import json, sqlite3, functools, os, hashlib,time, random, sys, hmac, uuid
 from flask import Flask, current_app, g, session, redirect, render_template, url_for, request
 
 
@@ -20,27 +20,28 @@ DROP TABLE IF EXISTS notes;
 
 CREATE TABLE notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    assocUser INTEGER NOT NULL,
+    assocUser VARCHAR(36) NOT NULL,
     dateWritten DATETIME NOT NULL,
     note TEXT NOT NULL,
     publicID INTEGER NOT NULL
 );
 
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id VARCHAR(36) PRIMARY KEY,
     username TEXT NOT NULL,
     password TEXT NOT NULL,
     salt TEXT NOT NULL
 );
 
-INSERT INTO notes VALUES(null,2,"1993-09-23 10:10:10","hello my friend",1234567890);
-INSERT INTO notes VALUES(null,2,"1993-09-23 12:10:10","i want lunch pls",1234567891);
-
 """)
     salt, password_hash = gen_password_hash("password")
-    db.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", ("admin", password_hash, salt))
+    admin_id = str(uuid.uuid4())
+    db.execute("INSERT INTO users(id, username, password, salt) VALUES(?, ?, ?, ?);", (admin_id,"admin", password_hash, salt))
     salt, password_hash = gen_password_hash("omgMPC")
-    db.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", ("bernardo", password_hash, salt))
+    bernardo_id = str(uuid.uuid4())
+    db.execute("INSERT INTO users(id, username, password, salt) VALUES(?, ?, ?, ?);", (bernardo_id, "bernardo", password_hash, salt))
+    db.execute("INSERT INTO notes VALUES(null, ?, ?, ?, ?)", (bernardo_id,"1993-09-23 10:10:10","hello my friend",1234567890))
+    db.execute("INSERT INTO notes VALUES(null, ?, ?, ?, ?)", (bernardo_id,"1993-09-23 12:10:10","i want lunch pls",1234567891))
     conn.commit()
     conn.close()
 
@@ -163,7 +164,8 @@ def register():
 
         if(not errored):
             salt, password_hash = gen_password_hash(password)
-            c.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", (username, password_hash, salt))
+            user_id = str(uuid.uuid4())
+            c.execute("INSERT INTO users(id, username, password, salt) VALUES(?, ?, ?, ?);", (user_id, username, password_hash, salt))
             db.commit()
             db.close()
             return f"""<html>
