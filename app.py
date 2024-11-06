@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS notes;
 
 CREATE TABLE notes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id VARCHAR(36) PRIMARY KEY,
     assocUser VARCHAR(36) NOT NULL,
     dateWritten DATETIME NOT NULL,
     note TEXT NOT NULL,
@@ -40,8 +40,10 @@ CREATE TABLE users (
     salt, password_hash = gen_password_hash("omgMPC")
     bernardo_id = str(uuid.uuid4())
     db.execute("INSERT INTO users(id, username, password, salt) VALUES(?, ?, ?, ?);", (bernardo_id, "bernardo", password_hash, salt))
-    db.execute("INSERT INTO notes VALUES(null, ?, ?, ?, ?)", (bernardo_id,"1993-09-23 10:10:10","hello my friend",1234567890))
-    db.execute("INSERT INTO notes VALUES(null, ?, ?, ?, ?)", (bernardo_id,"1993-09-23 12:10:10","i want lunch pls",1234567891))
+    note1_id = str(uuid.uuid4())
+    db.execute("INSERT INTO notes VALUES(?, ?, ?, ?, ?)", (note1_id, bernardo_id,"1993-09-23 10:10:10","hello my friend",1234567890))
+    note2_id = str(uuid.uuid4())
+    db.execute("INSERT INTO notes VALUES(?, ?, ?, ?, ?)", (note2_id, bernardo_id,"1993-09-23 12:10:10","i want lunch pls",1234567891))
     conn.commit()
     conn.close()
 
@@ -86,9 +88,10 @@ def notes():
             note = request.form['noteinput']
             db = connect_db()
             c = db.cursor()
+            note_id = str(uuid.uuid4())
             c.execute(
-                """INSERT INTO notes(id, assocUser, dateWritten, note, publicID) VALUES(null, ?, ?, ?, ?);""",
-                (session['userid'], time.strftime('%Y-%m-%d %H:%M:%S'), note, random.randrange(1000000000, 9999999999))
+                """INSERT INTO notes(id, assocUser, dateWritten, note, publicID) VALUES(?, ?, ?, ?, ?);""",
+                (note_id, session['userid'], time.strftime('%Y-%m-%d %H:%M:%S'), note, random.randrange(1000000000, 9999999999))
             )
             db.commit()
             db.close()
@@ -97,12 +100,13 @@ def notes():
             db = connect_db()
             c = db.cursor()
             c.execute("SELECT * from NOTES where publicID = ?", (noteid,))
-            result = c.fetchone()
+            result = c.fetchall()
             if(len(result)>0):
                 row = result[0]
+                note_id = str(uuid.uuid4())
                 c.execute(
-                    """INSERT INTO notes(id, assocUser, dateWritten, note, publicID) VALUES(null, ?, ?, ?, ?);""",
-                    (session['userid'], row[2], row[3], row[4])
+                    """INSERT INTO notes(id, assocUser, dateWritten, note, publicID) VALUES(?, ?, ?, ?, ?);""",
+                    (note_id, session['userid'], row[2], row[3], row[4])
                 )
             else:
                 importerror="No such note with that ID!"
@@ -131,7 +135,7 @@ def login():
             session.clear()
             session['logged_in'] = True
             session['userid'] = result[0]
-            session['username']=result[1]
+            session['username'] = result[1]
             return redirect(url_for('index'))
         else:
             error = "Wrong username or password!"
