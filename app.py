@@ -96,7 +96,7 @@ def notes():
             db = connect_db()
             c = db.cursor()
             c.execute("SELECT * from NOTES where publicID = ?", (noteid,))
-            result = c.fetchone()
+            result = c.fetchall()
             if(len(result)>0):
                 row = result[0]
                 c.execute(
