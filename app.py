@@ -132,7 +132,7 @@ def login():
             session['username']=result[1]
             return redirect(url_for('index'))
         else:
-            error = "Wrong username or password!"
+            error = "Wrong username or password! Please contact admin if in trouble!"
     return render_template('login.html',error=error)
 
 
