@@ -96,12 +96,11 @@ def notes():
             db = connect_db()
             c = db.cursor()
             c.execute("SELECT * from NOTES where publicID = ?", (noteid,))
-            result = c.fetchall()
-            if(len(result)>0):
-                row = result[0]
+            result = c.fetchone()
+            if result:
                 c.execute(
                     """INSERT INTO notes(id, assocUser, dateWritten, note, publicID) VALUES(null, ?, ?, ?, ?);""",
-                    (session['userid'], row[2], row[3], row[4])
+                    (session['userid'], result[2], result[3], result[4])
                 )
             else:
                 importerror="No such note with that ID!"
