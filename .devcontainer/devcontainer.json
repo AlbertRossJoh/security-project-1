@@ -6,7 +6,6 @@
     "customizations": {
         "vscode": {
           "extensions": [
-            "streetsidesoftware.code-spell-checker",
             "qwtel.sqlite-viewer"
         ]
         }
