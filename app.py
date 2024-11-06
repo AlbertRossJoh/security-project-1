@@ -188,8 +188,7 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-@app.before_first_request
-def init_db_entry():
+with app.app_context():
     if not os.path.exists(app.database):
         init_db()
 if __name__ == "__main__":
