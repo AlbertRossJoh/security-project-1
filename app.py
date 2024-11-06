@@ -1,4 +1,4 @@
-import json, sqlite3, click, functools, os, hashlib,time, random, sys
+import json, sqlite3, functools, os, hashlib,time, random, sys, hmac
 from flask import Flask, current_app, g, session, redirect, render_template, url_for, request
 
 
@@ -29,17 +29,29 @@ CREATE TABLE notes (
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    salt TEXT NOT NULL
 );
 
-INSERT INTO users VALUES(null,"admin", "password");
-INSERT INTO users VALUES(null,"bernardo", "omgMPC");
 INSERT INTO notes VALUES(null,2,"1993-09-23 10:10:10","hello my friend",1234567890);
 INSERT INTO notes VALUES(null,2,"1993-09-23 12:10:10","i want lunch pls",1234567891);
 
 """)
+    salt, password_hash = gen_password_hash("password")
+    db.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", ("admin", password_hash, salt))
+    salt, password_hash = gen_password_hash("omgMPC")
+    db.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", ("bernardo", password_hash, salt))
+    conn.commit()
+    conn.close()
 
+def gen_password_hash(password: str, salt: str = ""):
+    if not salt: salt=os.urandom(15).hex()
+    password_hash=hashlib.sha256(str.encode(password+salt)).hexdigest()
+    return salt, password_hash
 
+def compare_password(expected: str, actual: str, salt: str):
+    _, actual_hash = gen_password_hash(actual, salt)
+    return actual_hash == expected
 
 ### APPLICATION SETUP ###
 app = Flask(__name__)
@@ -100,7 +112,6 @@ def notes():
     c = db.cursor()
     c.execute("SELECT * FROM notes WHERE assocUser = ?;", (session['userid'],))
     notes = c.fetchall()
-    #print(notes)
     
     return render_template('notes.html',notes=notes,importerror=importerror)
 
@@ -113,14 +124,13 @@ def login():
         password = request.form['password']
         db = connect_db()
         c = db.cursor()
-        c.execute("SELECT * FROM users WHERE username = ? AND password = ?;", (username, password))
-        result = c.fetchall()
-
-        if len(result) > 0:
+        c.execute("SELECT id, username, password, salt FROM users WHERE username = ?", (username, ))
+        result = c.fetchone()
+        if result and compare_password(result[2], password, result[3]):
             session.clear()
             session['logged_in'] = True
-            session['userid'] = result[0][0]
-            session['username']=result[0][1]
+            session['userid'] = result[0]
+            session['username']=result[1]
             return redirect(url_for('index'))
         else:
             error = "Wrong username or password!"
@@ -147,12 +157,13 @@ def register():
 
         #Check if username already exists.
         c.execute("SELECT * FROM users WHERE username = ?;", (username,))
-        if(len(c.fetchall())>0):
+        if c.fetchone():
             errored = True
             usererror = "That username is already in use by someone else!"
 
         if(not errored):
-            c.execute("INSERT INTO users(id, username, password) VALUES(null, ?, ?);", (username, password))
+            salt, password_hash = gen_password_hash(password)
+            c.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", (username, password_hash, salt))
             db.commit()
             db.close()
             return f"""<html>
@@ -177,6 +188,10 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+@app.before_first_request
+def init_db_entry():
+    if not os.path.exists(app.database):
+        init_db()
 if __name__ == "__main__":
     #create database if it doesn't exist yet
     if not os.path.exists(app.database):
