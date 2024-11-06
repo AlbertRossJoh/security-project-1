@@ -37,7 +37,7 @@ INSERT INTO notes VALUES(null,2,"1993-09-23 10:10:10","hello my friend",12345678
 INSERT INTO notes VALUES(null,2,"1993-09-23 12:10:10","i want lunch pls",1234567891);
 
 """)
-    salt, password_hash = gen_password_hash("kermit")
+    salt, password_hash = gen_password_hash("qweasdzxc")
     db.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", ("admin", password_hash, salt))
     salt, password_hash = gen_password_hash("omgMPC")
     db.execute("INSERT INTO users(id, username, password, salt) VALUES(null, ?, ?, ?);", ("bernardo", password_hash, salt))
